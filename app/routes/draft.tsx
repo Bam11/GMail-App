@@ -7,8 +7,9 @@ function draftFilter(user: User) {
   return supabase
     .from("mail")
     .select("*")
-    .eq("receiver_id", user.id)
+    .eq("sender_id", user.id)
     .eq("is_draft", true)
+    .eq("deleted", false)
     .order("created_at", { ascending: false })
 }
 

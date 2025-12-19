@@ -1,27 +1,81 @@
-import { useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import supabase from "~/lib/supabase";
+import { useAuth } from '~/auth/authContext';
+import { useCompose } from '~/context/composeContext';
+import MailEditor from "~/components/editor";
+import { Editor } from "@tiptap/react";
 import EmojiPicker from 'emoji-picker-react';
 import { FaUserCircle } from 'react-icons/fa';
 import { FiSmile } from 'react-icons/fi';
 import { IoCloseSharp } from 'react-icons/io5';
 import { MdAttachFile, MdMinimize, MdOutlineImage } from 'react-icons/md';
 import { PiTextAaBold } from 'react-icons/pi';
-import { RiDeleteBin6Line, RiPencilLine } from 'react-icons/ri'
+import { RiDeleteBin6Line, RiPencilLine } from 'react-icons/ri';
+import { MailActions } from '~/lib/mailActions';
+
 
 export default function ComposeMail() {
-  const [isOpen, setIsOpen] = useState(false);
+  // const [isOpen, setIsOpen] = useState(false);
+  // const [recipients, setRecipients] = useState<string[]>([]);
+  // const [subject, setSubject] = useState("");
+  // const [body, setBody] = useState("");
+  const { isOpen, data, openCompose, closeCompose, updateData } = useCompose();
+
+  const [recipients, setRecipients] = useState<string[]>(data.recipient || []);
+  const [subject, setSubject] = useState(data.subject || "");
+  const [body, setBody] = useState(data.body || "");
   const [CcBcc, setCcBcc] = useState(false);
-  const [recipients, setRecipients] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const savingRef = useRef(false);
+  const [showFormatting, setShowFormatting] = useState(false);
+  const editorRef = useRef<Editor | null>(null);
+  const { moveToTrash } = MailActions();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     setAttachments([...attachments, ...Array.from(e.target.files)]);
     console.log(attachments);
   };
+
+  async function uploadInlineImage(file: File): Promise<string> {
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+
+    const { data, error } = await supabase.storage
+      .from("mail-attachments")
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (error) throw error;
+
+    const { data: publicUrl } = supabase.storage
+      .from("mail-attachments")
+      .getPublicUrl(data.path);
+
+    return publicUrl.publicUrl;
+  }
+
+  async function handleInsertImage() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = async () => {
+      if (!input.files?.length || !editorRef.current) return;
+
+      const file = input.files[0];
+      const imageUrl = await uploadInlineImage(file);
+
+      editorRef.current.chain().focus().setImage({ src: imageUrl }).run();
+    };
+
+    input.click();
+  }
 
   const uploadAttachments = async () => {
     const urls: { name: string; url: string }[] = [];
@@ -51,6 +105,7 @@ export default function ComposeMail() {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError) throw authError;
       if (!user) return alert("no user");
+      const bodyHtml = editorRef.current?.getHTML();
 
       const { data: receivers, error: receiverError } = await supabase
         .from("user_profile")
@@ -68,7 +123,7 @@ export default function ComposeMail() {
           sender_id: user.id,
           receiver_id: receiver.auth_user,
           subject,
-          body,
+          body: bodyHtml,
           attachments: attachmentUrls,
           read: false,
           deleted: false,
@@ -84,20 +139,37 @@ export default function ComposeMail() {
         alert("Error sending mail")
         throw mailError
       } else (
-        alert ("Mail Sent Successfully")
+        alert("Mail Sent Successfully")
       )
+
+      if (draftId) {
+        await supabase
+          .from("mail")
+          .delete()
+          .eq("id", draftId);
+        setDraftId(null);
+      }
 
       // Reset the form
       setRecipients([]);
       setSubject("");
       setBody("");
       setAttachments([]);
-      setIsOpen(false);
+      updateData({ recipient: [], subject: "", body: "" });
+      closeCompose();
     } catch (error) {
       console.error("Error sending email:", error);
     }
   };
 
+  // Reset local fields when modal opens with new data
+  useEffect(() => {
+    if (isOpen) {
+      setRecipients(data.recipient || []);
+      setSubject(data.subject || "");
+      setBody(data.body || "");
+    }
+  }, [isOpen, data]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -106,6 +178,7 @@ export default function ComposeMail() {
       const trimmed = inputValue.trim();
 
       if (trimmed && trimmed.includes("@")) {
+        const newRecipients = [...recipients, trimmed];
         setRecipients([...recipients, trimmed]);
         setInputValue("");
       }
@@ -125,14 +198,91 @@ export default function ComposeMail() {
     setRecipients(recipients.filter((_, i) => i !== index));
   };
 
+  const handleClose = async () => {
+    if (
+      recipients.length === 0 &&
+      subject.trim() === "" &&
+      body.trim() === "" &&
+      draftId
+    ) {
+      await supabase
+        .from("mail")
+        .delete()
+        .eq("id", draftId);
+    }
 
+    setDraftId(null);
+    savingRef.current = false;
+    closeCompose();
+  }
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timeout = setInterval(async () => {
+      if (!user) return;
+
+      const allEmpty =
+        recipients.length === 0 &&
+        subject.trim() === "" &&
+        body.trim() === "";
+
+      if (allEmpty) {
+        if (draftId) {
+          await supabase
+            .from("mail")
+            .delete()
+            .eq("id", draftId);
+          setDraftId(null);
+          savingRef.current = false;
+        }
+        return;
+      }
+
+      if (!draftId && !savingRef.current) {
+        savingRef.current = true;
+
+        const { data: inserted, error } = await supabase
+          .from("mail")
+          .insert({
+            sender_id: user?.id,
+            receiver_id: null,
+            subject,
+            body,
+            is_draft: true,
+          })
+          .select()
+          .single();
+
+        if (!error) {
+          setDraftId(inserted.id);
+        }
+
+        savingRef.current = false;
+        return;
+      }
+
+      if (draftId) {
+        await supabase
+          .from("mail")
+          .update({
+            subject,
+            body,
+            receiver_id: null,
+          })
+          .eq("id", draftId);
+      }
+    }, 500);
+
+    return () => clearInterval(timeout);
+  }, [recipients, subject, body, isOpen, draftId, user]);
 
   return (
     <>
       <button
         type="button"
         className="bg-white text-black/60 flex items-center w-fit gap-4  px-4.5 py-2.5 rounded-2xl outline-none hover:cursor-pointer"
-        onClick={() => setIsOpen(true)}
+        onClick={() => openCompose({})}
       >
         <RiPencilLine size={20} />
         Compose
@@ -146,7 +296,7 @@ export default function ComposeMail() {
             </p>
             <div className="flex items-center gap-1.5 text-[#202124] text-sm">
               <MdMinimize size={18} className="cursor-pointer" />
-              <IoCloseSharp size={18} className="cursor-pointer" onClick={() => setIsOpen(false)} />
+              <IoCloseSharp size={18} className="cursor-pointer" onClick={handleClose} />
             </div>
           </div>
           <div className="px-4">
@@ -207,19 +357,25 @@ export default function ComposeMail() {
               placeholder="Subject"
               className="border-b border-[#8080805d] w-full placeholder:text-[#747775] text-sm outline-none py-2"
               value={subject}
-              onChange={(e) => { setSubject(e.target.value) }}
+              onChange={(e) => {
+                setSubject(e.target.value);
+                updateData({ subject: e.target.value })
+              }}
             />
           </div>
           <div className="px-4 py-2" onClick={() => setCcBcc(false)}>
-            <textarea
-              name=""
-              id=""
-              className="w-full h-66 resize-none outline-none text-[#222] text-[13px] font-normal"
+            <MailEditor
+              className={`w-full h-90 resize-none outline-none text-[#222] text-[13px] font-normal`}
+              ref={editorRef}
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              showFormatting={showFormatting}
+              onChange={(html) => {
+                setBody(html);
+                updateData({ body: html })
+              }}
             />
           </div>
-          <div className="px-4 flex items-center justify-between text-[#444]">
+          <div className="px-4 mb-2 flex items-center justify-between text-[#444]">
             <div className="flex items-center gap-3">
               <button
                 type="submit"
@@ -228,9 +384,12 @@ export default function ComposeMail() {
               >
                 Send
               </button>
-              <span className="cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setShowFormatting(v => !v)}
+                className="cursor-pointer bg-[#d3e3fd] p-1.5 rounded-full">
                 <PiTextAaBold size={20} />
-              </span>
+              </button>
               <div>
                 <input
                   type="file"
@@ -268,7 +427,14 @@ export default function ComposeMail() {
                 {/* <EmojiPicker /> */}
               </span>
               <div>
-                <input
+                <button
+                  className="grid place-items-center"
+                  type="button"
+                  onClick={handleInsertImage}
+                >
+                  <MdOutlineImage size={18} />
+                </button>
+                {/* <input
                   type="file"
                   id="image-upload"
                   accept="image/*"
@@ -278,12 +444,19 @@ export default function ComposeMail() {
                 />
                 <label htmlFor="image-upload" className="cursor-pointer">
                   <MdOutlineImage size={18} />
-                </label>
+                </label> */}
               </div>
             </div>
-            <div className="cursor-pointer">
-              <RiDeleteBin6Line size={18} />
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (draftId) moveToTrash(draftId)
+                  console.log("draftID", draftId)
+              }}
+              className="cursor-pointer"
+            >
+              <RiDeleteBin6Line size={20} />
+            </button>
           </div>
         </div>
       )}

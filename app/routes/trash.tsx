@@ -6,8 +6,7 @@ import supabase from "~/lib/supabase";
 function trashFilter(user: User) {
   return supabase
     .from("mail")
-    .select("*")
-    .eq("receiver_id", user.id)
+    .select("*, sender:sender_id(*), receiver:receiver_id(*)")  
     .eq("deleted", true)
     .order("created_at", { ascending: false })
 }

@@ -10,68 +10,81 @@ import { MailActions } from '~/lib/mailActions';
 interface contextMenuProps {
   x: number,
   y: number,
+  mailId: string,
   closeContextMenu: () => void,
   context: "inbox" | "trash" | "sent" | "draft";
 }
+
+type MailActionName = 
+  | "reply"
+  | "replyAll"
+  | "forward"
+  | "moveToTrash"
+  | "restoreMail"
+  | "deletePermanently"
+  | "markAsUnread"
+  | "discardDraft";
+
 
 function getActions(context: string) {
   switch (context) {
     case "trash":
       return {
         section1: [
-          { label: "Reply", icon: HiOutlineReply },
-          { label: "Reply all", icon: LuReplyAll },
-          { label: "Forward", icon: LuForward },
+          { label: "Reply", icon: HiOutlineReply, action: "reply" as MailActionName },
+          { label: "Reply all", icon: LuReplyAll, action: "replyAll" as MailActionName},
+          { label: "Forward", icon: LuForward, action: "forward" as MailActionName},
         ],
         section2: [
-          { label: "Move to inbox", icon: RiInboxFill },
-          { label: "Delete forever", icon: RiDeleteBin6Line },
-          { label: "Mark as unread", icon: MdOutlineMarkEmailUnread },
+          { label: "Restore mail", icon: RiInboxFill, action: "restoreMail" as MailActionName},
+          { label: "Delete forever", icon: RiDeleteBin6Line, action: "deletePermanently" as MailActionName},
+          { label: "Mark as unread", icon: MdOutlineMarkEmailUnread, action: "markAsUnread" as MailActionName},
         ]
       };
 
     case "sent":
       return {
         section1: [
-          { label: "Reply", icon: HiOutlineReply },
-          { label: "Reply all", icon: LuReplyAll },
-          { label: "Forward", icon: LuForward },
+          { label: "Reply", icon: HiOutlineReply, action: "reply" as MailActionName},
+          { label: "Reply all", icon: LuReplyAll, action: "replyAll" as MailActionName},
+          { label: "Forward", icon: LuForward, action: "forward" as MailActionName},
         ],
         section2: [
-          { label: "Delete", icon: RiDeleteBin6Line },
-          { label: "Mark as unread", icon: MdOutlineMarkEmailUnread },
+          { label: "Delete", icon: RiDeleteBin6Line, action:"moveToTrash" as MailActionName},
+          { label: "Mark as unread", icon: MdOutlineMarkEmailUnread, action: "markAsUnread" as MailActionName},
         ]
       };
 
     case "draft":
       return {
         section1: [
-          { label: "Delete", icon: RiDeleteBin6Line },
-          { label: "Discard drafts", icon: RiDeleteBin6Line },
-          { label: "Mark as unread", icon: MdOutlineMarkEmailUnread },
+          { label: "Delete", icon: RiDeleteBin6Line, action:"moveToTrash" as MailActionName},
+          { label: "Discard drafts", icon: RiDeleteBin6Line, action:"discardDraft" as MailActionName},
+          { label: "Mark as unread", icon: MdOutlineMarkEmailUnread, action: "markAsUnread" as MailActionName},
         ]
       };
 
     default: //"inbox"
       return {
         section1: [
-          { label: "Reply", icon: HiOutlineReply },
-          { label: "Reply all", icon: LuReplyAll },
-          { label: "Forward", icon: LuForward },
+          { label: "Reply", icon: HiOutlineReply, action: "reply" as MailActionName},
+          { label: "Reply all", icon: LuReplyAll, action: "replyAll" as MailActionName},
+          { label: "Forward", icon: LuForward, action: "forward" as MailActionName},
         ],
         section2: [
-          { label: "Delete", icon: RiDeleteBin6Line },
-          { label: "Mark as unread", icon: MdOutlineMarkEmailUnread },
+          { label: "Delete", icon: RiDeleteBin6Line, action:"moveToTrash" as MailActionName},
+          { label: "Mark as unread", icon: MdOutlineMarkEmailUnread, action: "markAsUnread" as MailActionName},
         ]
       };
   }
 }
 
-const ContextMenu: FC<contextMenuProps> = ({ x, y, closeContextMenu, context }) => {
-  const contextMenuRef = useRef<HTMLDivElement>(null);
+const ContextMenu: FC<contextMenuProps> = ({ x, y, mailId, closeContextMenu, context }) => {
+  const contextMenuRef = useRef<HTMLDivElement>(null!);
   useOnClickOutside(contextMenuRef, closeContextMenu);  //the contextMenuRef is giving an error maybe you can help check if less busy
 
   const actions = getActions(context);
+  const mail = MailActions();
 
   return (
     <div
@@ -81,11 +94,12 @@ const ContextMenu: FC<contextMenuProps> = ({ x, y, closeContextMenu, context }) 
       className="absolute z-50 bg-white w-64 rounded-md shadow-lg border border-gray-200"
     >
       <div className="py-1">
-        {actions.section1.map(({ label, icon: Icon }) => (
+        {actions.section1.map(({ label, icon: Icon, action }) => (
           <button
             key={label}
-            onClick={() => {
+            onClick={async () => {
               console.log(label, "clicked");
+              await mail[action](mailId);
               closeContextMenu();
             }}
             className="flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200"
@@ -97,11 +111,12 @@ const ContextMenu: FC<contextMenuProps> = ({ x, y, closeContextMenu, context }) 
       </div>
       <hr className="border-gray-200" />
       <div className="py-1">
-        {actions.section2?.map(({ label, icon: Icon }) => (
+        {actions.section2?.map(({ label, icon: Icon, action }) => (
           <button
             key={label}
-            onClick={() => {
+            onClick={async () => {
               console.log(label, "clicked");
+              await mail[action](mailId);
               closeContextMenu();
             }}
             className="flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200"
