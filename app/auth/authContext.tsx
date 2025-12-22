@@ -32,27 +32,52 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthLoading(false);
-      setSession(session);
-      if (!session) {
-        setUser(null);
-        navigate("/login");
-      } else {
-        setUser(session.user);
+    (async () => {
+      setIsAuthLoading(true)
 
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        const response = await supabase.auth.getSession();
+        const session = response.data.session;
+
+        setSession(session);
+
+        if (!session) {
+          setUser(null);
+          // navigate("/login");
+        } else {
+          setUser(session.user);
+        }
+
+      } catch(error) {
+        console.error("Auth error:", error);
+        setUser(null);  
+      } finally {
+        setIsAuthLoading(false);
       }
-    }
-    );
+    })();
+    // supabase.auth.getSession().then(({ data: { session } }) => {
+    //   setIsAuthLoading(false);  
+    //   setSession(session);
+    //   if (!session) {
+    //     setUser(null);
+    //     navigate("/login");
+    //   } else {
+    //     setUser(session.user);
+
+    //   }
+    // }
+    // );
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async(_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log("_event", _event);
       console.log("session", session);
       setSession(session)

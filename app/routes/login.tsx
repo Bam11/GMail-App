@@ -169,12 +169,11 @@ export default function Login() {
         </div> */}
         <div className="max-w-4xl w-full mx-4 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="hidden md:flex flex-col justify-center p-8 bg-white rounded-lg shadow-lg">
-            <h1 className="text-3xl font-extrabold text-sky-700 mb-4">
-              Welcome to G‑mail Clone
+            <h1 className="text-3xl font-extrabold bg-linear-to-r from-[#4285f4] via-[#c5221f] via-[#fbbc04] to-[#34a853] text-transparent bg-clip-text mb-4">
+              G‑mail
             </h1>
             <p className="text-gray-600">
-              Fast, minimal, and built for learning. Sign in to access your
-              mailbox and manage emails.
+              Sign in to access your mailbox and manage emails.
             </p>
           </div>
 

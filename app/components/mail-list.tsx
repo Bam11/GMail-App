@@ -72,7 +72,7 @@ export default function MailList({ mail, onOpenMail, context, searchText }:
         <ContextMenu x={contextMenu.x} y={contextMenu.y} closeContextMenu={contextMenuClose} context={context} mailId={contextMenu.mailId!} />
       }
       <div
-        className={`group flex items-center justify-between gap-9 text-[#444746] text-sm py-1 px-4.5 border-y border-[#8080805d] cursor-pointer transition ${isUnread ? "bg-[#f2f6fc] hover:bg-[#e88f0fe]" : "bg-white/5 hover:bg-gray-100"}`}
+        className={`bg-white/5 group flex items-center justify-between gap-9 text-[#444746] text-sm py-1 px-4.5 border-y border-[#8080805d] cursor-pointer transition hover:shadow-lg`}
         onClick={() => onOpenMail(mail)}
         onContextMenu={handleContextMenu}
       >

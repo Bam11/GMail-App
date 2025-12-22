@@ -9,7 +9,6 @@ import supabase from "~/lib/supabase";
 import type { User } from '@supabase/supabase-js';
 import { useAuth } from '~/auth/authContext';
 import { type Mail } from "~/lib/types"
-import { read } from 'fs';
 
 // interface Mail {
 //   id: string;
@@ -218,6 +217,8 @@ export default function MailPage({ filter, context = "inbox" }: MailPageProps) {
       .eq("id", mail.id);
   };
 
+  if (!user) return null;
+  
   return (
     <div className="w-full h-full">
       <TopNav

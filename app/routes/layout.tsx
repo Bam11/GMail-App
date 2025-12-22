@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import supabase from "~/lib/supabase"
 import { useAuth } from '~/auth/authContext'
-import { NavLink, Outlet } from 'react-router'
+import { NavLink, Outlet, useNavigate } from 'react-router'
 import ComposeMail from '~/components/compose-mail'
 import { RxHamburgerMenu } from 'react-icons/rx'
 import { RiDeleteBin6Line, RiInboxFill } from 'react-icons/ri'
@@ -15,10 +15,13 @@ import { AiOutlineExclamationCircle } from 'react-icons/ai'
 
 export default function Layout() {
   const [showMore, setShowMore] = useState(false);
-  const { user } = useAuth();
   const [inboxCount, setInboxCount] = useState(0);
   const [draftCount, setDraftCount] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const { user, isAuthLoading } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) return;
@@ -47,6 +50,58 @@ export default function Layout() {
     fetchCounts();
   }, [user]);
 
+  useEffect(() => {
+    if (!isAuthLoading) {
+      setProgress(100);
+      return;
+    }
+
+    setProgress(10);
+
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) return prev; 
+        return prev + Math.random() * 10;
+      });
+    }, 300);
+
+    return () => clearInterval(interval);
+  }, [isAuthLoading]);
+
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-white">
+        <img
+          src="/images/gmail.PNG"
+          alt="Gmail"
+          className=""
+        />
+
+        <div className="w-48 h-1.5 bg-gray-200 rounded overflow-hidden">
+          <div 
+            className="h-full bg-[#ea4335] transition-all duration-300"
+            style={{ width: `${progress}%` }} 
+          />
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-lg font-medium">You are not logged in</p>
+
+        <button
+          onClick={() => navigate("/login")}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Proceed to Login
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden select-none">
@@ -83,7 +138,7 @@ export default function Layout() {
                     className={({ isActive }) =>
                       `text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none ${isActive ? "bg-white/30" : "hover:bg-white/20"
                       }`}>
-                    <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                    <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                       <RiInboxFill size={20} className="text-white/70" />
                       {!collapsed && <p>Inbox</p>}
                     </div>
@@ -94,7 +149,7 @@ export default function Layout() {
                     className={({ isActive }) =>
                       `text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none ${isActive ? "bg-white/30" : "hover:bg-white/20"
                       }`}>
-                    <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                    <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                       <BiSend size={20} className="text-white/70" />
                       {!collapsed && <p>Sent</p>}
                     </div>
@@ -104,7 +159,7 @@ export default function Layout() {
                     className={({ isActive }) =>
                       `text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none ${isActive ? "bg-white/30" : "hover:bg-white/20"
                       }`}>
-                    <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                    <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                       <MdOutlineInsertDriveFile size={20} className="text-white/70" />
                       {!collapsed && <p>Draft</p>}
                     </div>
@@ -115,8 +170,8 @@ export default function Layout() {
                     className={({ isActive }) =>
                       `text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none ${isActive ? "bg-white/30" : "hover:bg-white/20"
                       }`}>
-                    <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
-                      <RiDeleteBin6Line size={20} className="text-white/70"/>
+                    <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
+                      <RiDeleteBin6Line size={20} className="text-white/70" />
                       {!collapsed && <p>Trash</p>}
                     </div>
                   </NavLink>
@@ -140,7 +195,7 @@ export default function Layout() {
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                        <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                           <IoMdStarOutline size={20} className="text-white/70" />
                           {!collapsed && <p>Starred</p>}
                         </div>
@@ -148,7 +203,7 @@ export default function Layout() {
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                        <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                           <GoClock size={20} className="text-white/70" />
                           {!collapsed && <p>Snooze</p>}
                         </div>
@@ -156,7 +211,7 @@ export default function Layout() {
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                        <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                           <MdOutlineShoppingBag size={20} className="text-white/70" />
                           {!collapsed && <p>Purchases</p>}
                         </div>
@@ -165,7 +220,7 @@ export default function Layout() {
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                        <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                           <FiInbox size={20} />
                           {!collapsed && <p>Important</p>}
                         </div>
@@ -173,7 +228,7 @@ export default function Layout() {
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                        <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                           <FiInbox size={20} />
                           {!collapsed && <p>Scheduled</p>}
                         </div>
@@ -181,7 +236,7 @@ export default function Layout() {
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                        <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                           <FiInbox size={20} />
                           {!collapsed && <p>All Mail</p>}
                         </div>
@@ -189,7 +244,7 @@ export default function Layout() {
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                        <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                           <AiOutlineExclamationCircle size={20} className="rotate-180" />
                           {!collapsed && <p>Spam</p>}
                         </div>
@@ -198,7 +253,7 @@ export default function Layout() {
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                        <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                           <FiInbox size={20} />
                           {!collapsed && <p>Manage Subscription</p>}
                         </div>
@@ -206,7 +261,7 @@ export default function Layout() {
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                        <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                           <FiInbox size={20} />
                           {!collapsed && <p>Manage labels</p>}
                         </div>
@@ -214,7 +269,7 @@ export default function Layout() {
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                        <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                           <FiInbox size={20} />
                           {!collapsed && <p>Create new label</p>}
                         </div>
@@ -234,7 +289,7 @@ export default function Layout() {
           <button
             type="button"
             className="absolute bottom-4 left-0 bg-white/20 text-white flex items-center justify-between gap-20 ml-6 py-2 px-3 text-sm font-bold rounded-2xl hover:cursor-pointer outline-none">
-            <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+            <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
               <PiNumberCircleOneLight size={20} className="text-black" />
               {!collapsed && <p>Upgrade</p>}
             </div>
