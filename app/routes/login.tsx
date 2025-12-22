@@ -15,6 +15,7 @@ export default function Login() {
   const [isLoading, setisLoading] = useState(false);
   const [showPassword, setshowPassword] = useState(false);
   const [errors, seterrors] = useState<Record<string, string>>({});
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,7 +41,7 @@ export default function Login() {
     //   newErrors.fullName = "Full name is required";
     // }
 
-    if (mode === "signup"){
+    if (mode === "signup") {
       if (!FormData.username.trim()) {
         newErrors.username = "Username is required";
       } else if (FormData.username.length < 3) {
@@ -75,7 +76,7 @@ export default function Login() {
 
     try {
       if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error: signupError } = await supabase.auth.signUp({
           email: FormData.email,
           password: FormData.password,
           options: {
@@ -92,12 +93,47 @@ export default function Login() {
         //   }
         // })
 
-        if (error) {
-          console.error(error.message);
-          seterrors({ email: error.message });
+        if (signupError) {
+          console.error(signupError.message);
+          seterrors({ email: signupError.message });
           return;
         }
 
+        // Upsert user profile in Supabase
+        const { error: userError } = await supabase.from("user_profile").upsert({
+          auth_user: user?.id,
+          username: FormData.username,
+          fullname: FormData.fullName,
+        });
+
+        if (userError) {
+          throw userError;
+        }
+
+        // Update user metadata in Supabase
+        const { error:updateError } = await supabase.auth.updateUser({
+          data: {
+            username: FormData.username,
+            fullName: FormData.fullName,
+          },
+        });
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        // Update local user state
+        if (user) {
+          const updatedUser = {
+            ...user,
+            user_metadata: {
+              ...user.user_metadata,
+              username: FormData.username,
+              fullName: FormData.fullName,
+            },
+          };
+          setUser(updatedUser);
+        }
 
         navigate("/");
       } else {
@@ -235,7 +271,7 @@ export default function Login() {
                     onChange={handleInputChange}
                     type="text"
                     name="username"
-                    className={`w-full mb-4 p-3 border rounded focus:outline-none focus:ring-2 focus:ring-sky-200 ${errors.username ? "border-red-500" : "border-[#dbdbdb] focus:border-gray-500"
+                    className={`w-full mb-4 p-3 border text-black rounded focus:outline-none focus:ring-2 focus:ring-sky-200 ${errors.username ? "border-red-500" : "border-[#dbdbdb] focus:border-gray-500"
                       }`}
                     placeholder="username"
                   />
@@ -254,12 +290,12 @@ export default function Login() {
                   value={FormData.password}
                   onChange={handleInputChange}
                   required
-                  className={`w-full mb-4 p-3 border rounded focus:outline-none focus:ring-2 focus:ring-sky-200 ${errors.password ? "border-red-500" : "border-[#dbdbdb] focus:border-gray-500"
+                  className={`w-full mb-4 p-3 text-black border rounded focus:outline-none focus:ring-2 focus:ring-sky-200 ${errors.password ? "border-red-500" : "border-[#dbdbdb] focus:border-gray-500"
                     }`}
                 />
                 <button type="button"
                   onClick={() => setshowPassword(!showPassword)}
-                  className="absolute top-1/2 transform -translate-y-1/2 right-3 text-gray-400 text-[12px] font-semibold dark:text-white">
+                  className="absolute top-1/2 transform -translate-y-1/2 right-3 text-gray-400 text-[12px] font-semibold dark:text-gray-400">
                   {showPassword ? "Hide" : "Show"}
                 </button>
                 {errors.password && (
