@@ -67,8 +67,6 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log("submit fired")
-
     if (!validateForm()) {
       return;
     }
