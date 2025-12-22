@@ -18,7 +18,27 @@ interface MailAttachment {
 
 
 
-export default function MailBody({ mail, onClose, context }: { mail: Mail; onClose: () => void, context: "inbox" | "trash" | "sent" | "draft"; }) {
+export default function MailBody({
+  mail,
+  onClose,
+  context,
+  start,
+  end,
+  total,
+  onPrev,
+  onNext,
+  currentPage,
+}: {
+  mail: Mail;
+  onClose: () => void,
+  context: "inbox" | "trash" | "sent" | "draft";
+  start: number;
+  end: number;
+  total: number;
+  onPrev: () => void;
+  onNext: () => void;
+  currentPage: number;
+}) {
   const {
     reply,
     replyAll,
@@ -126,15 +146,29 @@ export default function MailBody({ mail, onClose, context }: { mail: Mail; onClo
         <div className="flex items-center justify-center text-[#444] text-sm gap-5">
           <div>
             <p className="text-[12px] p-2 rounded-sm text-[#5e5e5e]">
-              1 - 50 of 11,541
+              {start} - {end} of {total}
             </p>
           </div>
-          <div>
+          <button
+            type="button"
+            className={`p-2 rounded-full cursor-pointer ${currentPage === 1 ? "opacity-40"
+              : "hover:bg-gray-300"
+              }`}
+            disabled={currentPage === start}
+            onClick={onPrev}
+          >
             <IoIosArrowBack size={15} className="" />
-          </div>
-          <div>
+          </button>
+          <button
+            type="button"
+            className={`p-2 rounded-full cursor-pointer ${end === total ? "opacity-40"
+              : "hover:bg-gray-300"
+              }`}
+            disabled={end === total}
+            onClick={onNext}
+          >
             <IoIosArrowBack size={15} className="rotate-180" />
-          </div>
+          </button>
         </div>
       </div>
       <div className="bg-white h-full">

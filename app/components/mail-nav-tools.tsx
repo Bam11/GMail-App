@@ -5,7 +5,20 @@ import { Link } from "react-router";
 import { MdRefresh } from "react-icons/md";
 import { LuEllipsisVertical } from "react-icons/lu";
 
-export default function MailNavTools() {
+type ToolsProps = {
+  onRefresh: () => void | Promise<void>;
+  start: number;
+  end: number;
+  total: number;
+  currentPage: number;
+  onPrev: () => void;
+  onNext: () => void;
+  sortOrder: "newest" | "oldest";
+  onSortChange: (v: "newest" | "oldest") => void;
+
+}
+
+export default function MailNavTools({ onRefresh, start, end, total, currentPage, onPrev, onNext, sortOrder, onSortChange }: ToolsProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const handleMouseEnter = () => {
     setShowDropdown(true);
@@ -49,38 +62,67 @@ export default function MailNavTools() {
             </MenuItems>
           </Menu>
         </div>
-        <MdRefresh size={20} className="text-gray-600" />
+        <button
+          type="button"
+          className="cursor-pointer"
+        >
+          <MdRefresh
+            size={20}
+            className="text-gray-600 hover:rotate-180 transition-transform duration-300"
+            onClick={onRefresh}
+          />
+        </button>
         <LuEllipsisVertical size={20} className="text-gray-600" />
       </div>
       <div className="flex items-center justify-center text-[#444] text-sm gap-5">
-        <div 
+        <div
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           className="relative"
         >
           <p className="text-[12px] hover:bg-gray-400/30 p-2 rounded-sm hover:border transition-all duration-300 ease-in-out text-[#5e5e5e]">
-            1 - 50 of 11,541
+            {start} - {end} of {total}
           </p>
           {showDropdown && (
-            <div 
+            <div
               className="absolute bg-white top-10 w-38 py-2 rounded-sm z-40 shadow-lg text-center flex flex-col justify-between gap-2 text-sm">
               <p
-                className="hover:bg-gray-100 py-2"
+                onClick={() => onSortChange("newest")}
+                className={`hover:bg-gray-100 py-2 cursor-pointer ${sortOrder === "newest" ? "font-semibold" : ""
+                  }`}
               >
                 Newest
               </p>
-              <p className="hover:bg-gray-100 py-2">
+              <p
+                onClick={() => onSortChange("oldest")}
+                className={`hover:bg-gray-100 py-2 cursor-pointer ${sortOrder === "oldest" ? "font-semibold" : ""
+                  }`}
+              >
                 Oldest
               </p>
             </div>
           )}
         </div>
-        <div>
-          <IoIosArrowBack size={20} className="" />
-        </div>
-        <div>
-          <IoIosArrowBack size={20} className="rotate-180" />
-        </div>
+        <button
+          type="button"
+          disabled={currentPage === 1}
+          onClick={onPrev}
+          className={`p-2 rounded-full cursor-pointer ${currentPage === 1 ? "opacity-40"
+            : "hover:bg-gray-300"
+            }`}
+        >
+          <IoIosArrowBack size={16} className="" />
+        </button>
+        <button
+          type="button"
+          disabled={end === total}
+          onClick={onNext}
+          className={`p-2 rounded-full cursor-pointer ${end === total ? "opacity-40"
+            : "hover:bg-gray-300"
+            }`}
+        >
+          <IoIosArrowBack size={16} className="rotate-180" />
+        </button>
       </div>
     </div>
   )

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { AiOutlineExclamationCircle } from 'react-icons/ai'
 import { BiPurchaseTagAlt } from 'react-icons/bi'
 import { LuUsers } from 'react-icons/lu'
@@ -11,16 +12,22 @@ const mailTitle = [
 ]
 
 export default function MailHeader() {
+  const [active, setActive] = useState("Primary")
+
   return (
     <div className="flex items-center justify-between">
       {mailTitle.map((item, index) => {
         const Icon = item.icon;
         const outline = item.icon === AiOutlineExclamationCircle;
+        const isActive = active === item.title;
         return (
           <button
             type="button"
-            className="cursor-pointer flex items-center justify-center gap-5 p-4 pr-40 hover:bg-gray-400/20 text-[#444746] outline-0 focus:text-[#0b57d0] focus:border-b-2 focus:border-[#0b57d0]"
+            className={`cursor-pointer flex items-center justify-center gap-5 p-4 pr-40 hover:bg-gray-400/20
+              ${isActive ? "text-[#0b57d0] border-b-2 border-[#0b57d0]" : "text-[#444746] outline-0 "}
+              `}
             key={index}
+            onClick={() => setActive(item.title)}
           >
             <div>
               <Icon size={20} className={outline ? "rotate-180" : ""}/>

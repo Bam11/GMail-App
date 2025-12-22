@@ -1,8 +1,10 @@
-import { useState } from 'react'
-import { Link, Outlet } from 'react-router'
+import { useEffect, useState } from 'react'
+import supabase from "~/lib/supabase"
+import { useAuth } from '~/auth/authContext'
+import { NavLink, Outlet } from 'react-router'
 import ComposeMail from '~/components/compose-mail'
 import { RxHamburgerMenu } from 'react-icons/rx'
-import { RiInboxFill } from 'react-icons/ri'
+import { RiDeleteBin6Line, RiInboxFill } from 'react-icons/ri'
 import { FiArrowRight, FiInbox, FiPlus } from 'react-icons/fi'
 import { IoIosArrowUp, IoMdStarOutline } from 'react-icons/io'
 import { PiNumberCircleOneLight } from 'react-icons/pi'
@@ -13,17 +15,54 @@ import { AiOutlineExclamationCircle } from 'react-icons/ai'
 
 export default function Layout() {
   const [showMore, setShowMore] = useState(false);
+  const { user } = useAuth();
+  const [inboxCount, setInboxCount] = useState(0);
+  const [draftCount, setDraftCount] = useState(0);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchCounts = async () => {
+      const { count: inbox } = await supabase
+        .from("mail")
+        .select("id", { count: "exact", head: true })
+        .match({
+          receiver_id: user.id,
+          deleted: false,
+        });
+
+      const { count: draft } = await supabase
+        .from("mail")
+        .select("id", { count: "exact", head: true })
+        .match({
+          sender_id: user.id,
+          is_draft: true,
+        });
+
+      setInboxCount(inbox ?? 0);
+      setDraftCount(draft ?? 0);
+    };
+
+    fetchCounts();
+  }, [user]);
+
+
   return (
     <div className="relative min-h-screen overflow-hidden select-none">
       <div
         className="absolute inset-0 z-0 bg-[url('/images/mail-background.webp')] bg-cover bg-center bg-black/60 "
       />
       <div className="relative z-10 bg-white/10 backdrop-blur-xl flex w-screen">
-        <aside className="relative h-screen overflow-hidden flex flex-col min-w-[250px] space-y-4">
+        <aside className={`relative h-screen overflow-hidden flex flex-col space-y-4 transition-all duration-300 ${collapsed ? "min-w-20" : "min-w-[250px]"
+          }`}>
           <div className="flex items-center gap-2.5 px-4 pt-2">
-            <div className="hover:bg-black/10 p-4 hover:rounded-full text-white cursor-pointer">
+            <button
+              type="button"
+              onClick={() => setCollapsed(prev => !prev)}
+              className="hover:bg-black/10 p-4 hover:rounded-full text-white cursor-pointer">
               <RxHamburgerMenu size={20} />
-            </div>
+            </button>
             <img
               className="cursor-pointer"
               src="/images/gmail-logo.webp"
@@ -33,75 +72,66 @@ export default function Layout() {
 
           <div className="flex flex-col">
             <div className="px-4">
-              <ComposeMail />
+              <ComposeMail collapsed={collapsed} />
             </div>
 
             <div className="flex flex-col gap-14">
               <div className="flex flex-col justify-center gap-5">
                 <div className="flex flex-col mt-2 justify-center">
-                  <Link
+                  <NavLink
                     to="/"
-                    className="bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                    <div className="flex gap-5">
-                      <RiInboxFill size={20} className="text-white/70"/>
-                      <p>Inbox</p>
+                    className={({ isActive }) =>
+                      `text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none ${isActive ? "bg-white/30" : "hover:bg-white/20"
+                      }`}>
+                    <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                      <RiInboxFill size={20} className="text-white/70" />
+                      {!collapsed && <p>Inbox</p>}
                     </div>
-                    <span>9,802</span>
-                  </Link>
-                  <button
-                    type="button"
-                    className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                    <div className="flex gap-5">
-                      <IoMdStarOutline size={20} className="text-white/70"/>
-                      <p>Starred</p>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                    <div className="flex gap-5">
-                      <GoClock  size={20} className="text-white/70"/>
-                      <p>Snooze</p>
-                    </div>
-                  </button>
-                  <Link
+                    {!collapsed && <span>{inboxCount}</span>}
+                  </NavLink>
+                  <NavLink
                     to="/sent"
-                    className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                    <div className="flex gap-5">
-                      <BiSend size={20} className="text-white/70"/>
-                      <p>Sent</p>
+                    className={({ isActive }) =>
+                      `text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none ${isActive ? "bg-white/30" : "hover:bg-white/20"
+                      }`}>
+                    <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                      <BiSend size={20} className="text-white/70" />
+                      {!collapsed && <p>Sent</p>}
                     </div>
-                  </Link>
-                  <Link
+                  </NavLink>
+                  <NavLink
                     to="/draft"
-                    className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                    <div className="flex gap-5">
-                      <MdOutlineInsertDriveFile size={20} className="text-white/70"/>
-                      <p>Draft</p>
+                    className={({ isActive }) =>
+                      `text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none ${isActive ? "bg-white/30" : "hover:bg-white/20"
+                      }`}>
+                    <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                      <MdOutlineInsertDriveFile size={20} className="text-white/70" />
+                      {!collapsed && <p>Draft</p>}
                     </div>
-                    <span>4</span>
-                  </Link>
-                  <button
-                    type="button"
-                    className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                    <div className="flex gap-5">
-                      <MdOutlineShoppingBag  size={20} className="text-white/70"/>
-                      <p>Purchases</p>
+                    {!collapsed && <span>{draftCount}</span>}
+                  </NavLink>
+                  <NavLink
+                    to="/trash"
+                    className={({ isActive }) =>
+                      `text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none ${isActive ? "bg-white/30" : "hover:bg-white/20"
+                      }`}>
+                    <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                      <RiDeleteBin6Line size={20} className="text-white/70"/>
+                      {!collapsed && <p>Trash</p>}
                     </div>
-                    <span>12</span>
-                  </button>
+                  </NavLink>
                   <button
                     type="button"
                     className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
                     {showMore === false ? (
                       <div className="flex items-center gap-6.5" onClick={() => setShowMore(true)}>
                         <IoIosArrowUp className="rotate-180" />
-                        <p>More</p>
+                        {!collapsed && <p>More</p>}
                       </div>
                     ) : (
                       <div className="flex items-center gap-6.5" onClick={() => setShowMore(false)}>
                         <IoIosArrowUp className="" />
-                        <p>Less</p>
+                        {!collapsed && <p>Less</p>}
                       </div>
                     )}
                   </button>
@@ -110,73 +140,90 @@ export default function Layout() {
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className="flex gap-5">
-                          <FiInbox size={20} />
-                          <p>Important</p>
+                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                          <IoMdStarOutline size={20} className="text-white/70" />
+                          {!collapsed && <p>Starred</p>}
                         </div>
                       </button>
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className="flex gap-5">
-                          <FiInbox size={20} />
-                          <p>Scheduled</p>
+                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                          <GoClock size={20} className="text-white/70" />
+                          {!collapsed && <p>Snooze</p>}
                         </div>
                       </button>
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className="flex gap-5">
+                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                          <MdOutlineShoppingBag size={20} className="text-white/70" />
+                          {!collapsed && <p>Purchases</p>}
+                        </div>
+                        {/* <span>12</span> */}
+                      </button>
+                      <button
+                        type="button"
+                        className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
+                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
                           <FiInbox size={20} />
-                          <p>All Mail</p>
+                          {!collapsed && <p>Important</p>}
                         </div>
                       </button>
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className="flex gap-5">
-                          <AiOutlineExclamationCircle size={20} className="rotate-180"/>
-                          <p>Spam</p>
-                        </div>
-                        <span>4</span>
-                      </button>
-                      <Link
-                        to="/trash"
-                        className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className="flex gap-5">
+                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
                           <FiInbox size={20} />
-                          <p>Trash</p>
-                        </div>
-                      </Link>
-                      <button
-                        type="button"
-                        className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className="flex gap-5">
-                          <FiInbox size={20} />
-                          <p>Manage Subscription</p>
+                          {!collapsed && <p>Scheduled</p>}
                         </div>
                       </button>
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className="flex gap-5">
+                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
                           <FiInbox size={20} />
-                          <p>Manage labels</p>
+                          {!collapsed && <p>All Mail</p>}
                         </div>
                       </button>
                       <button
                         type="button"
                         className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
-                        <div className="flex gap-5">
+                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                          <AiOutlineExclamationCircle size={20} className="rotate-180" />
+                          {!collapsed && <p>Spam</p>}
+                        </div>
+                        {/* <span>4</span> */}
+                      </button>
+                      <button
+                        type="button"
+                        className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
+                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
                           <FiInbox size={20} />
-                          <p>Create new label</p>
+                          {!collapsed && <p>Manage Subscription</p>}
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
+                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                          <FiInbox size={20} />
+                          {!collapsed && <p>Manage labels</p>}
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
+                        <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
+                          <FiInbox size={20} />
+                          {!collapsed && <p>Create new label</p>}
                         </div>
                       </button>
                     </div>
                   )}
                 </div>
                 <div className="text-white flex items-center justify-between pl-8 pr-3 outline-none">
-                  Labels
+                  {!collapsed && <p>Labels</p>}
                   <div className="hover:bg-white/10 p-2 rounded-full">
                     <FiPlus size={20} />
                   </div>
@@ -187,11 +234,11 @@ export default function Layout() {
           <button
             type="button"
             className="absolute bottom-4 left-0 bg-white/20 text-white flex items-center justify-between gap-20 ml-6 py-2 px-3 text-sm font-bold rounded-2xl hover:cursor-pointer outline-none">
-            <div className="flex gap-3">
+            <div className={`flex gap-5 ${collapsed ? "justify-center": " "}`}>
               <PiNumberCircleOneLight size={20} className="text-black" />
-              <p>Upgrade</p>
+              {!collapsed && <p>Upgrade</p>}
             </div>
-            <FiArrowRight size={20} />
+            {!collapsed && <FiArrowRight size={20} />}
           </button>
         </aside>
         <Outlet />

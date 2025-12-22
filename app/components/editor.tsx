@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from "react";
+import { forwardRef, useEffect, useImperativeHandle } from "react";
 import { EditorContent, useEditor, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -45,6 +45,16 @@ const MailEditor = forwardRef<Editor | null, Props>(
         onChange(editor.getHTML());
       },
     });
+
+    useEffect(() => {
+      if (!editor) return;
+
+      if (value !== editor.getHTML()) {
+        editor.commands.setContent(value || "", {
+          emitUpdate: false,
+        });
+      }
+    }, [value, editor]);
 
     useImperativeHandle(ref, () => editor, [editor]);
 

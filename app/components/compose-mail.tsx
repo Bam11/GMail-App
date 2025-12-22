@@ -14,7 +14,7 @@ import { RiDeleteBin6Line, RiPencilLine } from 'react-icons/ri';
 import { MailActions } from '~/lib/mailActions';
 
 
-export default function ComposeMail() {
+export default function ComposeMail({ collapsed }: { collapsed: boolean }) {
   // const [isOpen, setIsOpen] = useState(false);
   // const [recipients, setRecipients] = useState<string[]>([]);
   // const [subject, setSubject] = useState("");
@@ -284,8 +284,15 @@ export default function ComposeMail() {
         className="bg-white text-black/60 flex items-center w-fit gap-4  px-4.5 py-2.5 rounded-2xl outline-none hover:cursor-pointer"
         onClick={() => openCompose({})}
       >
-        <RiPencilLine size={20} />
-        Compose
+        {collapsed ? (
+          <RiPencilLine size={20} />
+        ) : (
+          <>
+            <RiPencilLine size={20} />
+            <span>Compose</span>
+          </>
+        )}
+
       </button>
 
       {isOpen && (
@@ -451,7 +458,7 @@ export default function ComposeMail() {
               type="button"
               onClick={() => {
                 if (draftId) moveToTrash(draftId)
-                  console.log("draftID", draftId)
+                console.log("draftID", draftId)
               }}
               className="cursor-pointer"
             >

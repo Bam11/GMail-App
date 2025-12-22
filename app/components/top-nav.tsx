@@ -6,17 +6,22 @@ import { CgMenuGridO } from 'react-icons/cg';
 import { GoSignOut } from 'react-icons/go';
 import { useAuth } from "../auth/authContext";
 
-export default function TopNav() {
+export default function TopNav({
+  searchText,
+  onSearchChange
+}:{
+  searchText: string;
+  onSearchChange: (value: string) => void;
+}) {
   const { user, handleLogout } = useAuth();
-  const [searchText, setSearchText] = useState("");
   const [miniProfile, setMiniProfile] =  useState(false);
 
   const handleClear = () => {
-    setSearchText("")
+    onSearchChange("");
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-2">
+    <div className="flex items-center justify-between px-2 sm:px-4 py-2 gap-2">
       <div className="bg-white/10 py-1 px-4 flex items-center justify-between gap-5 rounded-sm min-w-[720px] backdrop-blur-sm">
         <div className="flex gap-3 items-center w-full" >
           <IoMdSearch size={24} className="text-white cursor-pointer" />
@@ -24,9 +29,9 @@ export default function TopNav() {
             type="text"
             value={searchText}
             placeholder="Search mail"
-            className="outline-none bg-transparent text-white placeholder-white/70 w-full py-3 px-2 rounded-sm "
+            className="outline-none bg-transparent text-white placeholder-white/70 w-full py-3 px-2 rounded-sm"
             onChange={(e) => {
-              setSearchText(e.target.value)
+              onSearchChange(e.target.value)
             }}
           />
           {searchText.length > 0 ? (
@@ -72,7 +77,10 @@ export default function TopNav() {
             className="size-full rounded-full object-center"
           />
           {miniProfile && (
-            <div className="absolute top-0 right-0 py-4 px-5 z-50 bg-[#28242c] rounded-2xl text-center w-[350px] text-black">
+            <div 
+              className="absolute top-0 right-0 py-4 px-5 z-50 bg-[#28242c] rounded-2xl text-center w-[350px] text-black"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex flex-col gap-5">
                 <div className=" flex items-center justify-between gap-2 text-sm text-white font-semibold">
                   <div className='size-7'>
@@ -83,9 +91,15 @@ export default function TopNav() {
                     />
                   </div>
                   <p>{user?.user_metadata.email}</p>
-                  <div className="hover:bg-[#28282c] p-2 rounded-full cursor-pointer" onClick={() => setMiniProfile(false)}>
+                  <button
+                    type="button" 
+                    className="hover:bg-[#28282c] p-2 rounded-full cursor-pointer" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMiniProfile(false)
+                    }}>
                     <IoCloseSharp size={24} className="" />
-                  </div>
+                  </button>
                 </div>
                 <div className="text-white space-y-3 text-xl grid place-items-center">
                   <div className='size-20'>
