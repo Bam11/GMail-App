@@ -67,7 +67,10 @@ export function MailActions() {
 
   async function moveToTrash(mailId: string) {
     await supabase.from("mail")
-      .update({ deleted: true })
+      .update({ 
+        deleted: true,
+        is_draft: false, 
+      })
       .eq("id", mailId);
   }
 

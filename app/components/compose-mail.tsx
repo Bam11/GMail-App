@@ -117,6 +117,14 @@ export default function ComposeMail({ collapsed }: { collapsed: boolean }) {
         throw new Error("Receipient not found");
       }
 
+      if (draftId) {
+        await supabase
+          .from("mail")
+          .delete()
+          .eq("id", draftId);
+        setDraftId(null);
+      }
+
       const attachmentUrls = await uploadAttachments();
       const mailData = receivers.map((receiver) => {
         return {
@@ -142,14 +150,6 @@ export default function ComposeMail({ collapsed }: { collapsed: boolean }) {
         alert("Mail Sent Successfully")
       )
 
-      if (draftId) {
-        await supabase
-          .from("mail")
-          .delete()
-          .eq("id", draftId);
-        setDraftId(null);
-      }
-
       // Reset the form
       setRecipients([]);
       setSubject("");
@@ -164,12 +164,16 @@ export default function ComposeMail({ collapsed }: { collapsed: boolean }) {
 
   // Reset local fields when modal opens with new data
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
       setRecipients(data.recipient || []);
       setSubject(data.subject || "");
       setBody(data.body || "");
-    }
-  }, [isOpen, data]);
+    
+  }, [isOpen]);
+
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -177,7 +181,7 @@ export default function ComposeMail({ collapsed }: { collapsed: boolean }) {
 
       const trimmed = inputValue.trim();
 
-      if (trimmed && trimmed.includes("@")) {
+      if (trimmed && isValidEmail(trimmed)) {
         const newRecipients = [...recipients, trimmed];
         setRecipients([...recipients, trimmed]);
         setInputValue("");
@@ -188,7 +192,7 @@ export default function ComposeMail({ collapsed }: { collapsed: boolean }) {
   const handleBlur = () => {
     const trimmed = inputValue.trim();
 
-    if (trimmed && trimmed.includes("@")) {
+    if (trimmed && isValidEmail(trimmed)) {
       setRecipients([...recipients, trimmed]);
       setInputValue("");
     }
@@ -197,6 +201,15 @@ export default function ComposeMail({ collapsed }: { collapsed: boolean }) {
   const removeRecipient = (index: number) => {
     setRecipients(recipients.filter((_, i) => i !== index));
   };
+
+  const commitRecipient = () => {
+    const trimmed = inputValue.trim();
+
+    if (trimmed && isValidEmail(trimmed)) {
+      setRecipients(prev => [...prev, trimmed]);
+    }
+    setInputValue("");
+  }
 
   const handleClose = async () => {
     if (
@@ -277,11 +290,17 @@ export default function ComposeMail({ collapsed }: { collapsed: boolean }) {
     return () => clearInterval(timeout);
   }, [recipients, subject, body, isOpen, draftId, user]);
 
+  useEffect(() => {
+  console.log("ComposeMail mounted");
+  return () => console.log("ComposeMail unmounted");
+}, []);
+
+
   return (
     <>
       <button
         type="button"
-        className="bg-white text-black/60 flex items-center w-fit gap-4  px-4.5 py-2.5 rounded-2xl outline-none hover:cursor-pointer"
+        className={`bg-white text-black/60 flex items-center w-fit gap-4  px-4.5 py-2.5 rounded-2xl outline-none hover:cursor-pointer `}
         onClick={() => openCompose({})}
       >
         {collapsed ? (
@@ -296,7 +315,7 @@ export default function ComposeMail({ collapsed }: { collapsed: boolean }) {
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-0 right-10 z-9999 bg-white text-black w-[460px] max-h-[445px] rounded-t-md">
+        <div className="fixed bottom-0 right-10 z-9999 bg-white text-black w-[460px] max-h-[90vh] rounded-t-md flex flex-col">
           <div className="flex items-center justify-between px-4 py-2.5 bg-gray-100 rounded-t-md cursor-pointer">
             <p className="text-[#041e49] text-sm font-semibold ">
               New Message
@@ -306,7 +325,7 @@ export default function ComposeMail({ collapsed }: { collapsed: boolean }) {
               <IoCloseSharp size={18} className="cursor-pointer" onClick={handleClose} />
             </div>
           </div>
-          <div className="px-4">
+          <div className="px-4 flex-1 overflow-y-auto">
             {CcBcc === false
               ? (
                 <input
@@ -358,7 +377,13 @@ export default function ComposeMail({ collapsed }: { collapsed: boolean }) {
                 </div>
               )}
           </div>
-          <div className="px-4" onClick={() => setCcBcc(false)}>
+          <div
+            className="px-4"
+            onClick={() => {
+              commitRecipient();
+              setCcBcc(false);
+            }}
+          >
             <input
               type="text"
               placeholder="Subject"
@@ -370,7 +395,13 @@ export default function ComposeMail({ collapsed }: { collapsed: boolean }) {
               }}
             />
           </div>
-          <div className="px-4 py-2" onClick={() => setCcBcc(false)}>
+          <div
+            className="px-4 py-2"
+            onClick={() => {
+              commitRecipient()
+              setCcBcc(false);
+            }}
+          >
             <MailEditor
               className={`w-full h-90 resize-none outline-none text-[#222] text-[13px] font-normal`}
               ref={editorRef}

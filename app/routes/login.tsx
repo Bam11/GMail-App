@@ -1,4 +1,4 @@
-import React, { Suspense, useState } from 'react'
+import React, { useState } from 'react'
 import supabase from "~/lib/supabase";
 import { useAuth } from '~/auth/authContext';
 import { useNavigate } from 'react-router';
@@ -99,40 +99,20 @@ export default function Login() {
           return;
         }
 
+        const authUser = data.user;
+
+
         // Upsert user profile in Supabase
-        const { error: userError } = await supabase.from("user_profile").upsert({
-          auth_user: user?.id,
+        const { error: profileError } = await supabase
+          .from("user_profile")
+          .upsert({
+          auth_user: authUser?.id,
           username: FormData.username,
           fullname: FormData.fullName,
         });
 
-        if (userError) {
-          throw userError;
-        }
-
-        // Update user metadata in Supabase
-        const { error:updateError } = await supabase.auth.updateUser({
-          data: {
-            username: FormData.username,
-            fullName: FormData.fullName,
-          },
-        });
-
-        if (updateError) {
-          throw updateError;
-        }
-
-        // Update local user state
-        if (user) {
-          const updatedUser = {
-            ...user,
-            user_metadata: {
-              ...user.user_metadata,
-              username: FormData.username,
-              fullName: FormData.fullName,
-            },
-          };
-          setUser(updatedUser);
+        if (profileError) {
+          throw profileError;
         }
 
         navigate("/");

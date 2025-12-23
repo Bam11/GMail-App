@@ -60,7 +60,7 @@ export default function Layout() {
 
     const interval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 90) return prev; 
+        if (prev >= 90) return prev;
         return prev + Math.random() * 10;
       });
     }, 300);
@@ -79,9 +79,9 @@ export default function Layout() {
         />
 
         <div className="w-48 h-1.5 bg-gray-200 rounded overflow-hidden">
-          <div 
+          <div
             className="h-full bg-[#ea4335] transition-all duration-300"
-            style={{ width: `${progress}%` }} 
+            style={{ width: `${progress}%` }}
           />
         </div>
       </div>
@@ -109,7 +109,7 @@ export default function Layout() {
         className="absolute inset-0 z-0 bg-[url('/images/mail-background.webp')] bg-cover bg-center bg-black/60 "
       />
       <div className="relative z-10 bg-white/10 backdrop-blur-xl flex w-screen">
-        <aside className={`relative h-screen overflow-hidden flex flex-col space-y-4 transition-all duration-300 ${collapsed ? "min-w-20" : "min-w-[250px]"
+        <aside className={`relative h-screen overflow-hidden flex flex-col space-y-4 transition-all duration-300 ${collapsed ? "min-w-2.5" : "min-w-[250px]"
           }`}>
           <div className="flex items-center gap-2.5 px-4 pt-2">
             <button
@@ -136,8 +136,9 @@ export default function Layout() {
                   <NavLink
                     to="/"
                     className={({ isActive }) =>
-                      `text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none ${isActive ? "bg-white/30" : "hover:bg-white/20"
-                      }`}>
+                      `text-white flex items-center  text-sm font-bold hover:cursor-pointer outline-none transition-all duration-300 ${isActive ? "bg-white/30" : "hover:bg-white/20"
+                      } ${collapsed ? "justify-center px-3 py-0.5 rounded-full w-10 ml-6" : "justify-between py-0.5 pl-8 pr-3 rounded-r-2xl w-full"}`}
+                  >
                     <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                       <RiInboxFill size={20} className="text-white/70" />
                       {!collapsed && <p>Inbox</p>}
@@ -147,8 +148,9 @@ export default function Layout() {
                   <NavLink
                     to="/sent"
                     className={({ isActive }) =>
-                      `text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none ${isActive ? "bg-white/30" : "hover:bg-white/20"
-                      }`}>
+                      `text-white flex items-center  text-sm font-bold hover:cursor-pointer outline-none transition-all duration-300 ${isActive ? "bg-white/30" : "hover:bg-white/20"
+                      } ${collapsed ? "justify-center px-3 py-0.5 rounded-full w-10 ml-6" : "justify-between py-0.5 pl-8 pr-3 rounded-r-2xl w-full"}`}
+                  >
                     <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                       <BiSend size={20} className="text-white/70" />
                       {!collapsed && <p>Sent</p>}
@@ -157,8 +159,9 @@ export default function Layout() {
                   <NavLink
                     to="/draft"
                     className={({ isActive }) =>
-                      `text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none ${isActive ? "bg-white/30" : "hover:bg-white/20"
-                      }`}>
+                      `text-white flex items-center  text-sm font-bold hover:cursor-pointer outline-none transition-all duration-300 ${isActive ? "bg-white/30" : "hover:bg-white/20"
+                      } ${collapsed ? "justify-center px-3 py-0.5 rounded-full w-10 ml-6" : "justify-between py-0.5 pl-8 pr-3 rounded-r-2xl w-full"}`}
+                  >
                     <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                       <MdOutlineInsertDriveFile size={20} className="text-white/70" />
                       {!collapsed && <p>Draft</p>}
@@ -168,8 +171,9 @@ export default function Layout() {
                   <NavLink
                     to="/trash"
                     className={({ isActive }) =>
-                      `text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none ${isActive ? "bg-white/30" : "hover:bg-white/20"
-                      }`}>
+                      `text-white flex items-center  text-sm font-bold hover:cursor-pointer outline-none transition-all duration-300 ${isActive ? "bg-white/30" : "hover:bg-white/20"
+                      } ${collapsed ? "justify-center px-3 py-0.5 rounded-full w-10 ml-6" : "justify-between py-0.5 pl-8 pr-3 rounded-r-2xl w-full"}`}
+                  >
                     <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                       <RiDeleteBin6Line size={20} className="text-white/70" />
                       {!collapsed && <p>Trash</p>}
@@ -177,7 +181,10 @@ export default function Layout() {
                   </NavLink>
                   <button
                     type="button"
-                    className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
+                    className={
+                      `text-white flex items-center  text-sm font-bold hover:cursor-pointer outline-none transition-all duration-300 hover:bg-white/20
+                      } ${collapsed ? "justify-center px-3 py-0.5 rounded-full w-10 ml-6" : "justify-between py-0.5 pl-8 pr-3 rounded-r-2xl w-full"}`}
+                  >
                     {showMore === false ? (
                       <div className="flex items-center gap-6.5" onClick={() => setShowMore(true)}>
                         <IoIosArrowUp className="rotate-180" />
@@ -194,7 +201,11 @@ export default function Layout() {
                     <div className="flex flex-col justify-center">
                       <button
                         type="button"
-                        className="hover:bg-white/30 text-white flex items-center justify-between py-0.5 pl-8 pr-3 text-sm font-bold rounded-r-2xl hover:cursor-pointer outline-none">
+                        className={
+                          `text-white flex items-center  text-sm font-bold hover:cursor-pointer outline-none transition-all duration-300 hover:bg-white/20
+                          ${collapsed ? "justify-center px-3 py-0.5 rounded-full w-10 ml-6" : "justify-between py-0.5 pl-8 pr-3 rounded-r-2xl w-full"}`
+                        }
+                      >
                         <div className={`flex gap-5 ${collapsed ? "justify-center" : " "}`}>
                           <IoMdStarOutline size={20} className="text-white/70" />
                           {!collapsed && <p>Starred</p>}
